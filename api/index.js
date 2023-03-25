@@ -8,6 +8,7 @@ const Place = require('./models/Place.js');
 const Booking = require('./models/Booking.js');
 const cookieParser = require('cookie-parser');
 const imageDownloader = require('image-downloader');
+
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require('multer');
 const fs = require('fs');
@@ -36,6 +37,7 @@ async function uploadToS3(path, originalFilename, mimetype) {
       secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     },
   });
+
   const parts = originalFilename.split('.');
   const ext = parts[parts.length - 1];
   const newFilename = Date.now() + '.' + ext;
@@ -129,11 +131,14 @@ app.post('/api/upload-by-link', async (req, res) => {
   const newName = 'photo' + Date.now() + '.jpg';
   await imageDownloader.image({
     url: link,
-    dest: '/tmp/' + newName,
+    // dest: '/tmp/' + newName,
+    dest: __dirname + '/uploads/' + newName,
   });
-  const url = await uploadToS3('/tmp/' + newName, newName, mime.lookup('/tmp/' + newName));
-  res.json(url);
+  // const url = await uploadToS3('/tmp/' + newName, newName, mime.lookup('/tmp/' + newName));
+  res.json(newName);
 });
+
+
 
 const photosMiddleware = multer({ dest: '/tmp' });
 app.post('/api/upload', photosMiddleware.array('photos', 100), async (req, res) => {
