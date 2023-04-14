@@ -140,16 +140,46 @@ app.post('/api/upload-by-link', async (req, res) => {
 
 
 
-const photosMiddleware = multer({ dest: '/tmp' });
+
+const photosMiddleware = multer({ dest: 'uploads/' });
+
 app.post('/api/upload', photosMiddleware.array('photos', 100), async (req, res) => {
   const uploadedFiles = [];
+
   for (let i = 0; i < req.files.length; i++) {
-    const { path, originalname, mimetype } = req.files[i];
-    const url = await uploadToS3(path, originalname, mimetype);
-    uploadedFiles.push(url);
+    const { path, originalname } = req.files[i];
+    const parts = originalname.split('.');
+    const ext = parts.pop();
+    const newName = `${Date.now()}_${i}.${ext}`;
+    const newPath = `${__dirname}/uploads/${newName}`;
+
+    fs.renameSync(path, newPath);
+
+    uploadedFiles.push(newName);
   }
+
   res.json(uploadedFiles);
 });
+
+
+
+
+// const photosMiddleware = multer({ dest: '/uploads' });
+
+// app.post('/api/upload', photosMiddleware.array('photos', 100), async (req, res) => {
+//   const uploadedFiles = [];
+//   for (let i = 0; i < req.files.length; i++) {
+//     const { path, originalname, mimetype } = req.files[i];
+//     const parts = originalname.split('.');
+//     const ext = parts[parts.length - 1]
+//     const newPath = parts + '.' + ext;
+//     fs.renameSync(path, newPath)
+//     // const url = await uploadToS3(path, originalname, mimetype);
+//     // uploadedFiles.push(url);
+//     uploadedFiles.push(newPath.replace('uploads/', ''));
+//   }
+//   res.json(uploadedFiles);
+// });
 
 app.post('/api/places', (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
