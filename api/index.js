@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User.js');
@@ -24,10 +24,12 @@ const bucket = 'dawid-booking-app';
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'));
-app.use(cors({
-  credentials: true,
-  origin: ['http://127.0.0.1:5173', 'http://localhost:5173']
-}));
+app.use(
+  cors({
+    credentials: true,
+    origin: ['http://127.0.0.1:5173', 'http://localhost:5173'],
+  })
+);
 
 async function uploadToS3(path, originalFilename, mimetype) {
   const client = new S3Client({
@@ -41,13 +43,15 @@ async function uploadToS3(path, originalFilename, mimetype) {
   const parts = originalFilename.split('.');
   const ext = parts[parts.length - 1];
   const newFilename = Date.now() + '.' + ext;
-  await client.send(new PutObjectCommand({
-    Bucket: bucket,
-    Body: fs.readFileSync(path),
-    Key: newFilename,
-    ContentType: mimetype,
-    ACL: 'public-read',
-  }));
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Body: fs.readFileSync(path),
+      Key: newFilename,
+      ContentType: mimetype,
+      ACL: 'public-read',
+    })
+  );
   return `https://${bucket}.s3.amazonaws.com/${newFilename}`;
 }
 
@@ -78,7 +82,6 @@ app.post('/api/register', async (req, res) => {
   } catch (e) {
     res.status(422).json(e);
   }
-
 });
 
 app.post('/api/login', async (req, res) => {
@@ -88,17 +91,24 @@ app.post('/api/login', async (req, res) => {
   if (userDoc) {
     const passOk = bcrypt.compareSync(password, userDoc.password);
     if (passOk) {
-      jwt.sign({
-        email: userDoc.email,
-        id: userDoc._id
-      }, jwtSecret, {}, (err, token) => {
-        if (err) throw err;
-        res.cookie('token', token, {
-          sameSite: 'none',
-          secure: true,
-          httpOnly: false
-        }).json(userDoc);
-      });
+      jwt.sign(
+        {
+          email: userDoc.email,
+          id: userDoc._id,
+        },
+        jwtSecret,
+        {},
+        (err, token) => {
+          if (err) throw err;
+          res
+            .cookie('token', token, {
+              sameSite: 'none',
+              secure: true,
+              httpOnly: false,
+            })
+            .json(userDoc);
+        }
+      );
     } else {
       res.status(422).json('pass not ok');
     }
@@ -125,7 +135,6 @@ app.post('/api/logout', (req, res) => {
   res.cookie('token', '').json(true);
 });
 
-
 app.post('/api/upload-by-link', async (req, res) => {
   const { link } = req.body;
   const newName = 'photo' + Date.now() + '.jpg';
@@ -138,31 +147,29 @@ app.post('/api/upload-by-link', async (req, res) => {
   res.json(newName);
 });
 
-
-
-
 const photosMiddleware = multer({ dest: 'uploads/' });
 
-app.post('/api/upload', photosMiddleware.array('photos', 100), async (req, res) => {
-  const uploadedFiles = [];
+app.post(
+  '/api/upload',
+  photosMiddleware.array('photos', 100),
+  async (req, res) => {
+    const uploadedFiles = [];
 
-  for (let i = 0; i < req.files.length; i++) {
-    const { path, originalname } = req.files[i];
-    const parts = originalname.split('.');
-    const ext = parts.pop();
-    const newName = `${Date.now()}_${i}.${ext}`;
-    const newPath = `${__dirname}/uploads/${newName}`;
+    for (let i = 0; i < req.files.length; i++) {
+      const { path, originalname } = req.files[i];
+      const parts = originalname.split('.');
+      const ext = parts.pop();
+      const newName = `${Date.now()}_${i}.${ext}`;
+      const newPath = `${__dirname}/uploads/${newName}`;
 
-    fs.renameSync(path, newPath);
+      fs.renameSync(path, newPath);
 
-    uploadedFiles.push(newName);
+      uploadedFiles.push(newName);
+    }
+
+    res.json(uploadedFiles);
   }
-
-  res.json(uploadedFiles);
-});
-
-
-
+);
 
 // const photosMiddleware = multer({ dest: '/uploads' });
 
@@ -185,15 +192,31 @@ app.post('/api/places', (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   const {
-    title, address, addedPhotos, description, price,
-    perks, extraInfo, checkIn, checkOut, maxGuests,
+    title,
+    address,
+    addedPhotos,
+    description,
+    price,
+    perks,
+    extraInfo,
+    checkIn,
+    checkOut,
+    maxGuests,
   } = req.body;
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
     if (err) throw err;
     const placeDoc = await Place.create({
-      owner: userData.id, price,
-      title, address, photos: addedPhotos, description,
-      perks, extraInfo, checkIn, checkOut, maxGuests,
+      owner: userData.id,
+      price,
+      title,
+      address,
+      photos: addedPhotos,
+      description,
+      perks,
+      extraInfo,
+      checkIn,
+      checkOut,
+      maxGuests,
     });
     res.json(placeDoc);
   });
@@ -218,16 +241,33 @@ app.put('/api/places', async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   const {
-    id, title, address, addedPhotos, description,
-    perks, extraInfo, checkIn, checkOut, maxGuests, price,
+    id,
+    title,
+    address,
+    addedPhotos,
+    description,
+    perks,
+    extraInfo,
+    checkIn,
+    checkOut,
+    maxGuests,
+    price,
   } = req.body;
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
     if (err) throw err;
     const placeDoc = await Place.findById(id);
     if (userData.id === placeDoc.owner.toString()) {
       placeDoc.set({
-        title, address, photos: addedPhotos, description,
-        perks, extraInfo, checkIn, checkOut, maxGuests, price,
+        title,
+        address,
+        photos: addedPhotos,
+        description,
+        perks,
+        extraInfo,
+        checkIn,
+        checkOut,
+        maxGuests,
+        price,
       });
       await placeDoc.save();
       res.json('ok');
@@ -241,22 +281,59 @@ app.get('/api/places', async (req, res) => {
 });
 
 app.post('/api/bookings', async (req, res) => {
-  mongoose.connect(process.env.MONGO_URL);
-  const userData = await getUserDataFromReq(req);
-  const {
-    place, checkIn, checkOut, numberOfGuests, name, phone, price,
-  } = req.body;
-  Booking.create({
-    place, checkIn, checkOut, numberOfGuests, name, phone, price,
-    user: userData.id,
-  }).then((doc) => {
-    res.json(doc);
-  }).catch((err) => {
-    throw err;
-  });
+  try {
+
+    mongoose.connect(process.env.MONGO_URL);
+    const { place, checkIn, checkOut, numberOfGuests, name, phone, price } =
+      req.body;
+
+    // Check if the maximum number of guests allowed in the place is greater than or equal to the number of guests specified in the booking request
+    const findPlace = await Place.findById(place);
+    if (findPlace.maxGuests < numberOfGuests) {
+      return res.status(400).json({
+        error: `This place can only accommodate ${findPlace.maxGuests} guests.`,
+      });
+    }
+
+    // Check if the place is already booked for the requested dates
+    const bookings = await Booking.find({ place: place });
+    const isBooked = bookings.some((booking) => {
+      return (
+        (new Date(checkIn) >= new Date(booking.checkIn) &&
+          new Date(checkIn) <= new Date(booking.checkOut)) ||
+        (new Date(checkOut) >= new Date(booking.checkIn) &&
+          new Date(checkOut) <= new Date(booking.checkOut))
+      );
+    });
+    if (isBooked) {
+      return res
+        .status(400)
+        .json({
+          error: 'This place is already booked for the requested dates.',
+        });
+    }
+    
+    const userData = await getUserDataFromReq(req);
+    const booking = await Booking.create({
+      place,
+      checkIn,
+      checkOut,
+      numberOfGuests,
+      name,
+      phone,
+      price,
+      user: userData.id,
+    });
+
+    res.json(booking);
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      error: 'An error occurred while processing your request.',
+    });
+  }
 });
-
-
 
 app.get('/api/bookings', async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
@@ -264,9 +341,8 @@ app.get('/api/bookings', async (req, res) => {
   res.json(await Booking.find({ user: userData.id }).populate('place'));
 });
 
-
 app.get('/', async (req, res) => {
-  res.send("HII")
-})
+  res.send('HII');
+});
 
 app.listen(4000);
