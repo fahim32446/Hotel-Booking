@@ -9,6 +9,12 @@ const Booking = require('./models/Booking.js');
 const cookieParser = require('cookie-parser');
 const imageDownloader = require('image-downloader');
 
+const auth = require('./routes/auth.js')
+
+
+
+
+
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require('multer');
 const fs = require('fs');
@@ -69,53 +75,69 @@ app.get('/api/test', (req, res) => {
   res.json('test ok');
 });
 
-app.post('/api/register', async (req, res) => {
-  mongoose.connect(process.env.MONGO_URL);
-  const { name, email, password } = req.body;
-  try {
-    const userDoc = await User.create({
-      name,
-      email,
-      password: bcrypt.hashSync(password, bcryptSalt),
-    });
-    res.json(userDoc);
-  } catch (e) {
-    res.status(422).json(e);
-  }
-});
 
-app.post('/api/login', async (req, res) => {
-  mongoose.connect(process.env.MONGO_URL);
-  const { email, password } = req.body;
-  const userDoc = await User.findOne({ email });
-  if (userDoc) {
-    const passOk = bcrypt.compareSync(password, userDoc.password);
-    if (passOk) {
-      jwt.sign(
-        {
-          email: userDoc.email,
-          id: userDoc._id,
-        },
-        jwtSecret,
-        {},
-        (err, token) => {
-          if (err) throw err;
-          res
-            .cookie('token', token, {
-              sameSite: 'none',
-              secure: true,
-              httpOnly: false,
-            })
-            .json(userDoc);
-        }
-      );
-    } else {
-      res.status(422).json('pass not ok');
-    }
-  } else {
-    res.json('not found');
-  }
-});
+
+
+
+
+app.use('/api/auth', auth);
+
+
+
+
+
+
+
+
+
+
+// app.post('/api/register', async (req, res) => {
+//   mongoose.connect(process.env.MONGO_URL);
+//   const { name, email, password } = req.body;
+//   try {
+//     const userDoc = await User.create({
+//       name,
+//       email,
+//       password: bcrypt.hashSync(password, bcryptSalt),
+//     });
+//     res.json(userDoc);
+//   } catch (e) {
+//     res.status(422).json(e);
+//   }
+// });
+
+// app.post('/api/login', async (req, res) => {
+//   mongoose.connect(process.env.MONGO_URL);
+//   const { email, password } = req.body;
+//   const userDoc = await User.findOne({ email });
+//   if (userDoc) {
+//     const passOk = bcrypt.compareSync(password, userDoc.password);
+//     if (passOk) {
+//       jwt.sign(
+//         {
+//           email: userDoc.email,
+//           id: userDoc._id,
+//         },
+//         jwtSecret,
+//         {},
+//         (err, token) => {
+//           if (err) throw err;
+//           res
+//             .cookie('token', token, {
+//               sameSite: 'none',
+//               secure: true,
+//               httpOnly: false,
+//             })
+//             .json(userDoc);
+//         }
+//       );
+//     } else {
+//       res.status(422).json('pass not ok');
+//     }
+//   } else {
+//     res.json('not found');
+//   }
+// });
 
 app.get('/api/profile', (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
